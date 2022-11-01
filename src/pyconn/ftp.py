@@ -6,8 +6,8 @@ import ftplib
 
 from deprecated import deprecated
 
-from .connector import FileConnector
-from .explorer import FileExplorer
+from .file import FileConnector
+from .file import FileExplorer
 
 
 # TODO : FTP PathLike로 원격지 주소 규정
@@ -17,15 +17,21 @@ class FTPConnector(FileConnector, FileExplorer):
     """ FTP 원격 서버 연결 및 탐색 클래스 입니다.
     """
 
-    def __init__(self, address: str, port: int, user: str, password: str, encoding='UTF-8'):
+    def __init__(self, **kwargs):
         self.ftp = None
-        self.connect(address=address, port=port, user=user, password=password, encoding=encoding)
+        self.connect(**kwargs)
         
     def connect(self, **kwargs) -> bool:
+        self.address = kwargs['address']
+        self.port = int(kwargs['port'])
+        self.user = kwargs['user']
+        self.password = kwargs['password']
+        self.encoding = kwargs['encoding'] if 'encoding' in kwargs else 'UTF-8'
+
         self.ftp = ftplib.FTP()
-        self.ftp.encoding = kwargs['encoding']
-        self.ftp.connect(kwargs['address'], kwargs['port'])
-        self.ftp.login(kwargs['user'], kwargs['password'])
+        self.ftp.encoding = self.encoding
+        self.ftp.connect(self.address, self.port)
+        self.ftp.login(self.user, self.password)
         
 
     def close(self) -> bool:
