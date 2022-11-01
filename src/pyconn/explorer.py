@@ -3,7 +3,7 @@
 
 from typing import Any
 
-from . import Connector
+from .connector import Connector
 from abc import abstractmethod
 
 

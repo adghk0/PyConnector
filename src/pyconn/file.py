@@ -1,6 +1,6 @@
 
-from . import Connector
-from . import Explorer
+from .connector import Connector
+from .explorer import Explorer
 from abc import abstractmethod
 
 class FileConnector(Connector):

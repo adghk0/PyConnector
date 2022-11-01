@@ -6,8 +6,7 @@ import ftplib
 
 from deprecated import deprecated
 
-from .file import FileConnector
-from .file import FileExplorer
+from .file import FileConnector, FileExplorer
 
 
 # TODO : FTP PathLike로 원격지 주소 규정

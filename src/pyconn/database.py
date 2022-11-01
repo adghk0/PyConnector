@@ -1,5 +1,5 @@
 
-from . import Connector
+from .connector import Connector
 from abc import abstractmethod
 
 import pymysql
@@ -8,11 +8,15 @@ class Database(Connector):
     """ 데이터베이스 연결 인터페이스 클래스 입니다.
     """
     @abstractmethod
+    def commit(self):
+        pass
+
+    @abstractmethod
     def query(self, query: str, arguments: list):
         pass
 
     @abstractmethod
-    def select(self, table: str, columns: list, conditions: dict):
+    def select(self, table: str, columns: list=[], conditions: dict={}):
         pass
 
     @abstractmethod
@@ -26,11 +30,11 @@ class Database(Connector):
     @abstractmethod
     def delete(self, table: str, conditions: dict):
         pass
-
+    
     def check(self, table: str, conditions: dict):
-        return self.select(table, ['1'], conditions)[0][0] is not None
+        return not self.select(table, ['1'], conditions)[0]
 
-    def do_insert_or_select(self, table: str, columns: list, datas: dict):
+    def insert_or_select(self, table: str, columns: list, datas: dict):
         if not self.check(table, datas):
             self.insert(table, datas)
         return self.select(table, columns, datas)
@@ -60,48 +64,60 @@ class MySQLDatabase(Database):
     def close(self) -> bool:
         self.db.close()
 
+    def commit(self):
+        self.db.commit()
 
-    def query(self, query: str, arguments: list = []):
+    def query(self, query: str, arguments: list=[]):
+        result = None
         with self.db.cursor() as cur:
-            cur.execute(query, arguments)
+            if arguments:
+                print(query)
+                aff = cur.execute(query, arguments)
+            else:
+                aff = cur.execute(query)
+            result = (aff, cur.fetchall())
+        return result
 
-    def select(self, table: str, columns: list, conditions: dict):
+    def select(self, table: str, columns: list=[], conditions: dict={}):
         if not columns:
             columns = ['*']
         s_columns = ', '.join(columns)
 
-        s_conditions = ('WHERE ' + ' AND '.join([f'{c}=%s' for c in conditions.keys()])) if conditions else ''
+        s_conditions = ('WHERE ' + ' AND '.join([f'`{c}`=%s' for c in conditions.keys()])) if conditions else ''
         
         sql = f'''
             SELECT {s_columns}
-            FROM {table}
-            {s_conditions}'''
-        self.query(sql, conditions.values())
+            FROM `{table}`
+            {s_conditions};
+        '''
+        return self.query(sql, list(conditions.values()))
 
     def insert(self, table: str, datas: dict):
-        s_columns = ', '.join(datas.keys())
-        s_value_pos = ', '.join(['%s']*len(datas))
+        s_columns = ', '.join(f'`{c}`' for c in datas.keys())
+        s_value_pos = ', '.join(['%s' for v in datas.values()])
         sql = f'''
-            INSERT INTO {table}
+            INSERT INTO `{table}`
             ({s_columns})
-            VALUES ({s_value_pos})
+            VALUES ({s_value_pos});
         '''
-        self.query(sql, datas.values())
+        return self.query(sql, list(datas.values()))
 
     def update(self, table: str, conditions: dict, datas: dict):
-        s_columns = ', '.join([f'{c} = %s'for c in  datas.keys()])
-        s_conditions = ('WHERE ' + ' AND '.join([f'{c}=%s' for c in conditions.keys()])) if conditions else ''
+        s_columns = ', '.join([f'`{c}`=%s' for c in datas.keys()])
+        s_conditions = ('WHERE ' + ' AND '.join([f'`{c}`=%s' for c in conditions.keys()])) if conditions else ''
         
         sql = f'''
-            UPDATE {table}
+            UPDATE `{table}`
             SET {s_columns}
-            {s_conditions}'''
-        self.query(sql, conditions.values())
+            {s_conditions};
+        '''
+        return self.query(sql, [*datas.values(), *conditions.values()])
 
     def delete(self, table: str, conditions: dict):
-        s_conditions = ('WHERE ' + ' AND '.join([f'{c}=%s' for c in conditions.keys()])) if conditions else ''
+        s_conditions = ('WHERE ' + ' AND '.join([f'`{c}`=%s' for c in conditions.keys()])) if conditions else ''
         
         sql = f'''
-            DELETE FROM {table}
-            {s_conditions}'''
-        self.query(sql, conditions.values())
+            DELETE FROM `{table}`
+            {s_conditions};
+        '''
+        return self.query(sql, list(conditions.values()))
