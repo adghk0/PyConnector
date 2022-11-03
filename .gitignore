@@ -1,2 +1,5 @@
 **/__pycache__/
-demo/
+example/
+build/
+dist/
+setup.py
