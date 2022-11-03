@@ -2,7 +2,9 @@
 import configparser
 
 
-class Config:
+class ConnectionConfig:
+    """ 연결 설정 클래스입니다.
+    """
     def __init__(self, file: str):
         self.file = file
         self.config = configparser.ConfigParser()
