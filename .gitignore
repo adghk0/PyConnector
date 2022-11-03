@@ -3,4 +3,4 @@ example/
 build/
 dist/
 setup.py
-pyconn.egg-info
+pyqconn.egg-info
